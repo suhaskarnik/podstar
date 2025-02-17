@@ -1,10 +1,20 @@
 from pyannote.audio import Pipeline
-from datasets import load_dataset
+from typing import Dict, List, Any
+
+from pydantic import BaseModel
 import torch
 from pyannote.audio.pipelines.utils.hook import ProgressHook
 
+class DiaryEntry(BaseModel):
+    speaker: str
+    start: float
+    end: float
 
-def diarize(input_file, output_file):
+class Diary(BaseModel):
+    entries: List[DiaryEntry]
+
+
+def diarize_episode(input_file: str, output_file: str):
     pipeline = Pipeline.from_pretrained(
         "pyannote/speaker-diarization-3.1", use_auth_token=True
     ) 
@@ -13,9 +23,16 @@ def diarize(input_file, output_file):
 
     with ProgressHook() as hook:
         diarization = pipeline(input_file, hook=hook)
-
+    
+    diary = Diary(entries=[])
     for turn, _, speaker in diarization.itertracks(yield_label=True):
-        print(f"start={turn.start:.1f}s stop={turn.end:.1f}s speaker_{speaker}")
+        entry = DiaryEntry(
+            start = turn.start,
+            end = turn.end,
+            speaker = speaker,
+        )
+        diary.entries.append(entry)
 
-    with open(output_file, 'w') as f:
-        diarization.write_rttm(f)
+    json = diary.model_dump_json()
+    with open(output_file, "w") as f:
+        f.write(json)
