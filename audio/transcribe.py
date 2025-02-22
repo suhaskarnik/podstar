@@ -3,7 +3,6 @@ from transformers import AutoModelForSpeechSeq2Seq, AutoProcessor, pipeline
 import json
 
 def transcribe_episode(input_file: str, output_file: str):
-
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     torch_dtype = torch.float16 if torch.cuda.is_available() else torch.float32
@@ -17,6 +16,7 @@ def transcribe_episode(input_file: str, output_file: str):
 
     processor = AutoProcessor.from_pretrained(model_id)
 
+    
     asr_pipe = pipeline(
         'automatic-speech-recognition',
         model=model,
@@ -29,8 +29,10 @@ def transcribe_episode(input_file: str, output_file: str):
 
     result = asr_pipe(
         input_file, generate_kwargs={"max_new_tokens": 256, "language": "english"},
-        return_timestamps=True,
+        return_timestamps="segment"
     )
+
+    print(result.keys())
     
     with open(output_file, 'w') as f:
         f.write(json.dumps(result["chunks"]))
