@@ -1,4 +1,4 @@
-from utils import hf_pipeline_to_srt, json_to_srt
+from utils import hf_transcript_to_srt, json_to_srt
 import click
 
 @click.group()
@@ -17,8 +17,8 @@ def diarize(input_file: str, output_file: str):
 @click.argument('output_file')
 def transcribe(input_file: str, output_file: str):
     from audio.transcribe import transcribe_episode
-    transcribe_episode(input_file, output_file)
-
+    transcript = transcribe_episode(input_file)
+    hf_transcript_to_srt(transcript, output_file)
 
 @cli.command()
 @click.argument('input_file')
